@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -29,8 +29,10 @@ public class TeleOpMode extends OpMode
      */
     @Override
     public void init() {
-        telemetry.addData("Status", "Initialized");
-
+        telemetry.addData("Status", "Initializing");
+        DcMotor[] motors = {frontLeftDrive,frontRightDrive,backLeftDrive,backRightDrive,armBaseMotor,jointOneMotor};
+        DcMotor.Direction[] motordirections = {DcMotor.Direction.REVERSE, DcMotor.Direction.FORWARD, DcMotor.Direction.REVERSE,
+                DcMotor.Direction.FORWARD, DcMotor.Direction.FORWARD, DcMotor.Direction.FORWARD};
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
@@ -39,11 +41,16 @@ public class TeleOpMode extends OpMode
         backLeftDrive = hardwareMap.get(DcMotor.class, "back_left_drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
         armBaseMotor = hardwareMap.get(DcMotor.class, "arm_base");
-        jointOneMotor = hardwareMap.get(DcMotor.class, "joint_one");
+        jointOneMotor = hardwareMap.get(DcMotor.class, "joint-one");
+
+        for (int i=0;i<motors.length;i++) {
+            motors[i].setDirection(motordirections[i]);
+        }
 
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
+        /*
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -51,6 +58,7 @@ public class TeleOpMode extends OpMode
         armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
         jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
 
+         */
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
