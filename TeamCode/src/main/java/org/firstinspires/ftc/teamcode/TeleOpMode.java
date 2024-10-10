@@ -3,20 +3,19 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 @TeleOp(name="Mecanum Drive", group="Iterative OpMode")
 public class TeleOpMode extends OpMode
 {
+    //TODO : fix joint / arm
+    //
+
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor frontLeftDrive = null;
-    private DcMotor frontRightDrive = null;
-    private DcMotor backLeftDrive = null;
-    private DcMotor backRightDrive = null;
-    private DcMotor armBaseMotor = null;
-    private DcMotor jointOneMotor = null;
+    static util core = new util();
     private double movementSpeedMultiplier = 1.0;
     private double armBasePower = 0;
     private double jointOnePower = 0;
@@ -27,27 +26,24 @@ public class TeleOpMode extends OpMode
     @Override
     public void init() {
         telemetry.addData("Status", "Initializing");
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "front_left_drive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "front_right_drive");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "back_left_drive");
-        backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
-        armBaseMotor = hardwareMap.get(DcMotor.class, "arm_base");
-        jointOneMotor = hardwareMap.get(DcMotor.class, "joint_one");
+        util.init(hardwareMap);
 
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
-        jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
+        util.frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        util.frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        util.backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        util.backRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        util.armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
+        util.jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
 
+        util.frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        util.frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        util.backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        util.backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        util.armBaseMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        util.jointOneMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
@@ -90,7 +86,7 @@ public class TeleOpMode extends OpMode
         double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
         double strafe = gamepad1.left_stick_x * 0.5 * movementSpeedMultiplier; // Reduce strafing speed to half
         double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
-
+        telemetry.addData("DEBUG:",gamepad1.right_stick_x);
         // Calculate the motor powers
         frontLeftPower = drive + strafe + turn;
         frontRightPower = drive - strafe - turn;
@@ -104,15 +100,15 @@ public class TeleOpMode extends OpMode
         backRightPower = Range.clip(backRightPower, -1.0, 1.0);
 
         // Send calculated power to wheels
-        frontLeftDrive.setPower(frontLeftPower);
-        frontRightDrive.setPower(frontRightPower);
-        backLeftDrive.setPower(backLeftPower);
-        backRightDrive.setPower(backRightPower);
+        util.frontLeftDrive.setPower(frontLeftPower);
+        util.frontRightDrive.setPower(frontRightPower);
+        util.backLeftDrive.setPower(backLeftPower);
+        util.backRightDrive.setPower(backRightPower);
 
         // Control the arm using the D-pad up and down buttons
-        if (gamepad2.dpad_up) {
+        if (gamepad1.dpad_up) {
             armBasePower = 0.5;
-        } else if (gamepad2.dpad_down) {
+        } else if (gamepad1.dpad_down) {
             armBasePower = -0.5;
         } else {
             armBasePower = 0;
@@ -122,17 +118,8 @@ public class TeleOpMode extends OpMode
         armBasePower *= 0.05; // Adjusted to 0.05 to prevent motor from burning out
 
         // Send calculated power to arm motors
-        armBaseMotor.setPower(armBasePower);
-        jointOneMotor.setPower(jointOnePower);
-
-        // Debugging for arm
-        if (armBasePower > 0) {
-            telemetry.addData("Arm Base Power", "Up");
-        } else if (armBasePower < 0) {
-            telemetry.addData("Arm Base Power", "Down");
-        } else {
-            telemetry.addData("Arm Base Power", "Neutral");
-        }
+        util.armBaseMotor.setPower(armBasePower);
+        util.jointOneMotor.setPower(jointOnePower);
 
         // Show the elapsed game time and wheel power.
         telemetry.addData("Status", "Run Time: " + runtime.toString());
