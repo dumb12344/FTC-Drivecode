@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -15,7 +14,7 @@ public class TeleOpMode extends OpMode
 
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    static util core = new util();
+    util core = new util();
     private double movementSpeedMultiplier = 1.0;
     private double armBasePower = 0;
     private double jointOnePower = 0;
@@ -26,24 +25,7 @@ public class TeleOpMode extends OpMode
     @Override
     public void init() {
         telemetry.addData("Status", "Initializing");
-        util.init(hardwareMap);
-
-        // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
-        // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
-        // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
-        util.frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        util.frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        util.backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        util.backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        util.armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
-        util.jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
-
-        util.frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        util.frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        util.backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        util.backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        util.armBaseMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        util.jointOneMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        core.init(hardwareMap);
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
@@ -75,18 +57,12 @@ public class TeleOpMode extends OpMode
         double backRightPower;
 
         // Check if precision mode is enabled
-        if(gamepad1.left_bumper){
-            movementSpeedMultiplier = 0.5;
-        }
-        else{
-            movementSpeedMultiplier = 1;
-        }
+        movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1;
 
         // Calculate the mecanum drive values
         double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
         double strafe = gamepad1.left_stick_x * 0.5 * movementSpeedMultiplier; // Reduce strafing speed to half
         double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
-        telemetry.addData("DEBUG:",gamepad1.right_stick_x);
         // Calculate the motor powers
         frontLeftPower = drive + strafe + turn;
         frontRightPower = drive - strafe - turn;
@@ -100,10 +76,10 @@ public class TeleOpMode extends OpMode
         backRightPower = Range.clip(backRightPower, -1.0, 1.0);
 
         // Send calculated power to wheels
-        util.frontLeftDrive.setPower(frontLeftPower);
-        util.frontRightDrive.setPower(frontRightPower);
-        util.backLeftDrive.setPower(backLeftPower);
-        util.backRightDrive.setPower(backRightPower);
+        core.frontLeftDrive.setPower(frontLeftPower);
+        core.frontRightDrive.setPower(frontRightPower);
+        core.backLeftDrive.setPower(backLeftPower);
+        core.backRightDrive.setPower(backRightPower);
 
         // Control the arm using the D-pad up and down buttons
         if (gamepad1.dpad_up) {
@@ -118,8 +94,8 @@ public class TeleOpMode extends OpMode
         armBasePower *= 0.05; // Adjusted to 0.05 to prevent motor from burning out
 
         // Send calculated power to arm motors
-        util.armBaseMotor.setPower(armBasePower);
-        util.jointOneMotor.setPower(jointOnePower);
+        core.armBaseMotor.setPower(armBasePower);
+        core.jointOneMotor.setPower(jointOnePower);
 
         // Show the elapsed game time and wheel power.
         telemetry.addData("Status", "Run Time: " + runtime.toString());
