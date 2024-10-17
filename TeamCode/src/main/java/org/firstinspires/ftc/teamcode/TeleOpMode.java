@@ -19,7 +19,7 @@ public class TeleOpMode extends OpMode
     private double armBasePower = 0;
     private double jointOnePower = 0;
 
-    /*
+    /**
      * Code to run ONCE when the driver hits INIT
      */
     @Override
@@ -30,14 +30,14 @@ public class TeleOpMode extends OpMode
         telemetry.addData("Status", "Initialized");
     }
 
-    /*
+    /**
      * Code to run REPEATEDLY after the driver hits INIT, but before they hit START
      */
     @Override
     public void init_loop() {
     }
 
-    /*
+    /**
      * Code run ONCE when the driver hits START
      */
     @Override
@@ -45,7 +45,7 @@ public class TeleOpMode extends OpMode
         runtime.reset();
     }
 
-    /*
+    /**
      * Code to run REPEATEDLY after the driver hits START but before they hit STOP
      */
     @Override
@@ -90,8 +90,7 @@ public class TeleOpMode extends OpMode
             armBasePower = 0;
         }
 
-        // Adjust the arm base power to account for the 20:1 gear ratio
-        armBasePower *= 0.05; // Adjusted to 0.05 to prevent motor from burning out
+        armBasePower *= 0.05;
 
         // Send calculated power to arm motors
         core.armBaseMotor.setPower(armBasePower);
@@ -102,6 +101,7 @@ public class TeleOpMode extends OpMode
         telemetry.addData("Motors", "frontLeft (%.2f), frontRight (%.2f), backLeft (%.2f), backRight (%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower);
         telemetry.addData("Arm Base Power", armBasePower);
         telemetry.addData("Joint One Power", jointOnePower);
+        telemetry.update();
     }
 
     /*
@@ -110,4 +110,5 @@ public class TeleOpMode extends OpMode
     @Override
     public void stop() {
     }
+
 }

@@ -10,6 +10,12 @@ public class util {
     public static DcMotor backRightDrive = null;
     public static DcMotor armBaseMotor = null;
     public static DcMotor jointOneMotor = null;
+    /**
+     * Initializes motors (and eventually servos)
+     * @param hardwareMap
+     * @see TeleOpMode
+     * @see Autonomous
+     */
     public static void init(HardwareMap hardwareMap) {
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
