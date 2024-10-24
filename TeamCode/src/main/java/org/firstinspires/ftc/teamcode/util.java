@@ -14,7 +14,7 @@ public class util {
      * Initializes motors (and eventually servos)
      * @param hardwareMap
      * @see TeleOpMode
-     * @see Autonomous
+     * @see AutonomousOpMode
      */
     public static void init(HardwareMap hardwareMap) {
         // Initialize the hardware variables. Note that the strings used here as parameters

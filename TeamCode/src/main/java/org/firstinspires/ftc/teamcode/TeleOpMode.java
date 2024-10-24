@@ -6,6 +6,12 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+/**
+ * Code for TeleOp mode, where you use the controller
+ * @see util
+ * @see OpMode
+ * @see TeleOp
+ */
 @TeleOp(name="Mecanum Drive", group="Iterative OpMode")
 public class TeleOpMode extends OpMode
 {
