@@ -101,7 +101,7 @@ public class TeleOpMode extends OpMode
         telemetry.addData("Motors", "frontLeft (%.2f), frontRight (%.2f), backLeft (%.2f), backRight (%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower);
         telemetry.addData("Arm Base Power", armBasePower);
         telemetry.addData("Joint One Power", jointOnePower);
-        telemetry.update();
+        updateTelemetry(telemetry);
     }
 
     /*
