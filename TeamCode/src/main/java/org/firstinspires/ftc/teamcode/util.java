@@ -25,7 +25,7 @@ public class util {
         backLeftDrive = hardwareMap.get(DcMotor.class, "back_left_drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
         armBaseMotor = hardwareMap.get(DcMotor.class, "arm_base");
-        jointOneMotor = hardwareMap.get(DcMotor.class, "joint_one");
+        //jointOneMotor = hardwareMap.get(DcMotor.class, "joint_one");
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
@@ -34,13 +34,13 @@ public class util {
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
-        jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
+        //jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
 
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         armBaseMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        jointOneMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //jointOneMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 }
