@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -19,38 +18,36 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvInternalCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
 
-@TeleOp(name="MecanumDrive", group="Iterative OpMode")
-public class TeleOpMode extends OpMode {
+/**
+ * Code for TeleOp mode, where you use the controller
+ * @see util
+ * @see OpMode
+ * @see TeleOp
+ */
+@TeleOp(name="Mecanum Drive", group="Iterative OpMode")
+public class TeleOpMode extends OpMode
+{
+    //TODO : fix joint / arm
+    //
+
+    // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor frontLeftDrive, frontRightDrive, backLeftDrive, backRightDrive;
-    private DcMotor armMotor;
+    util core = new util();
+    private double movementSpeedMultiplier = 1.0;
+    private double armBasePower = 0;
+    private double jointOnePower = 0;
 
-    private boolean precisionMode = false;
-    private double speedMultiplier = 1.0;
-    private double armPower = 0;
-
-    private boolean alignMode = false;
+private boolean alignMode = false;
     private static boolean targetBlue = true; // Default to blue target
     private OpenCvCamera camera;
-
+    /**
+     * Code to run ONCE when the driver hits INIT
+     */
     @Override
     public void init() {
-        telemetry.addData("Status", "Initialized");
-
-        // Hardware initialization
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "front_left_drive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "front_right_drive");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "back_left_drive");
-        backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
-        armMotor = hardwareMap.get(DcMotor.class, "joint_one");
-
-        // Set motor directions
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        armMotor.setDirection(DcMotor.Direction.FORWARD);
-
+        telemetry.addData("Status", "Initializing");
+        core.init(hardwareMap);
+        
         // Camera setup
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -71,15 +68,36 @@ public class TeleOpMode extends OpMode {
         });
 
         telemetry.addData("Camera", "Opened and streaming");
+        // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
 
+    /**
+     * Code to run REPEATEDLY after the driver hits INIT, but before they hit START
+     */
+    @Override
+    public void init_loop() {
+    }
+
+    /**
+     * Code run ONCE when the driver hits START
+     */
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+    /**
+     * Code to run REPEATEDLY after the driver hits START but before they hit STOP
+     */
     @Override
     public void loop() {
-        // Setup motor power variables
-        double frontLeftPower, frontRightPower, backLeftPower, backRightPower;
-
-        // Toggle alignment mode with 'A' button and set color target
+        // Setup a variable for each drive wheel to save power level for telemetry
+        double frontLeftPower;
+        double frontRightPower;
+        double backLeftPower;
+        double backRightPower;
+// Toggle alignment mode with 'A' button and set color target
         if (gamepad1.a) {
             alignMode = true;
         } else {
@@ -111,15 +129,11 @@ public class TeleOpMode extends OpMode {
             }
         } else {
             // Standard drive mode
-            if (gamepad1.left_bumper) {
-                speedMultiplier = 0.5;
-            } else {
-                speedMultiplier = 1;
-            }
+            movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1;
 
-            double drive = -gamepad1.left_stick_y * speedMultiplier;
-            double strafe = gamepad1.left_stick_x * 0.5 * speedMultiplier; // Reduce strafing speed
-            double turn = gamepad1.right_stick_x * speedMultiplier;
+            double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
+            double strafe = gamepad1.left_stick_x * 0.5 * movementSpeedMultiplier; // Reduce strafing speed
+            double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
 
             frontLeftPower = drive + strafe + turn;
             frontRightPower = drive - strafe - turn;
@@ -132,27 +146,41 @@ public class TeleOpMode extends OpMode {
             backRightPower = Range.clip(backRightPower, -1.0, 1.0);
         }
 
-        frontLeftDrive.setPower(frontLeftPower);
-        frontRightDrive.setPower(frontRightPower);
-        backLeftDrive.setPower(backLeftPower);
-        backRightDrive.setPower(backRightPower);
+
+        // Send calculated power to wheels
+        core.frontLeftDrive.setPower(frontLeftPower);
+        core.frontRightDrive.setPower(frontRightPower);
+        core.backLeftDrive.setPower(backLeftPower);
+        core.backRightDrive.setPower(backRightPower);
 
         // Control the arm using the D-pad up and down buttons
         if (gamepad1.dpad_up) {
-            armPower = 0.5;
+            armBasePower = 0.5;
         } else if (gamepad1.dpad_down) {
-            armPower = -0.5;
+            armBasePower = -0.5;
         } else {
             armPower = 0;
         }
 
+        armBasePower *= 0.05;
+
+        // Send calculated power to arm motors
+        core.armBaseMotor.setPower(armBasePower);
+        core.jointOneMotor.setPower(jointOnePower);
         // Send calculated power to arm motor
         armMotor.setPower(armPower);
 
+        // Show the elapsed game time and wheel power.
         // Telemetry
+        telemetry.addData("Status", "Run Time: " + runtime.toString());
+        telemetry.addData("Motors", "frontLeft (%.2f), frontRight (%.2f), backLeft (%.2f), backRight (%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower);
+        telemetry.addData("Arm Base Power", armBasePower);
+        telemetry.addData("Joint One Power", jointOnePower);
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Alignment Mode", alignMode ? "ON" : "OFF");
         telemetry.addData("Target Color", targetBlue ? "Blue" : "Red");
+       
+        updateTelemetry(telemetry);
     }
 
     static class GamePiecePipeline extends OpenCvPipeline {
