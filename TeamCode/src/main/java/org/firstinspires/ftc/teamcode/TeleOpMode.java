@@ -74,7 +74,6 @@ public class TeleOpMode extends OpMode
         frontRightPower = drive - strafe - turn;
         backLeftPower = drive - strafe + turn;
         backRightPower = drive + strafe - turn;
-
         // Clip the motor powers to ensure they are within the valid range
         frontLeftPower = Range.clip(frontLeftPower, -1.0, 1.0);
         frontRightPower = Range.clip(frontRightPower, -1.0, 1.0);
