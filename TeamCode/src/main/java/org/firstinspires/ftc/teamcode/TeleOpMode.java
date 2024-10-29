@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -15,7 +14,6 @@ import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvInternalCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
 
 /**
@@ -31,14 +29,14 @@ public class TeleOpMode extends OpMode
     //
 
     // Declare OpMode members.
-    private ElapsedTime runtime = new ElapsedTime();
+    ElapsedTime runtime = new ElapsedTime();
     util core = new util();
-    private double movementSpeedMultiplier = 1.0;
-    private double armBasePower = 0;
-    private double jointOnePower = 0;
+    double movementSpeedMultiplier = 1.0;
+    double armBasePower = 0;
+    double jointOnePower = 0;
 
-    private boolean alignMode = false;
-    private static boolean targetBlue = true; // Default to blue target
+    boolean alignMode = false;
+    static boolean targetBlue = true; // Default to blue target
     private OpenCvCamera camera;
     /**
      * Code to run ONCE when the driver hits INIT
@@ -98,11 +96,7 @@ public class TeleOpMode extends OpMode
         double backLeftPower;
         double backRightPower;
 // Toggle alignment mode with 'A' button and set color target
-        if (gamepad1.a) {
-            alignMode = true;
-        } else {
-            alignMode = false;
-        }
+        alignMode = gamepad1.a;
 
         if (gamepad1.b) {
             targetBlue = !targetBlue; // Toggle between blue and red
@@ -120,6 +114,7 @@ public class TeleOpMode extends OpMode
                 frontRightPower = alignmentPower;
                 backLeftPower = -alignmentPower;
                 backRightPower = alignmentPower;
+                telemetry.addData("Alignment","Misaligned");
             } else {
                 frontLeftPower = 0;
                 frontRightPower = 0;
