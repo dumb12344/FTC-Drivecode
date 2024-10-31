@@ -16,7 +16,6 @@ import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvInternalCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
 
 @TeleOp(name="MecanumDrive", group="Iterative OpMode")
@@ -32,6 +31,14 @@ public class TeleOpMode extends OpMode {
     private boolean alignMode = false;
     private static boolean targetBlue = true; // Default to blue target
     private OpenCvCamera camera;
+
+    // Proportional control constants
+    private static final double ROTATION_KP = 0.005; // Adjust as needed
+    private static final double STRAFE_KP = 0.005;   // Adjust as needed
+
+    // Maximum power limits to prevent overcorrection
+    private static final double MAX_ROTATION_POWER = 0.3;
+    private static final double MAX_STRAFE_POWER = 0.3;
 
     @Override
     public void init() {
@@ -88,33 +95,51 @@ public class TeleOpMode extends OpMode {
 
         if (gamepad1.b) {
             targetBlue = !targetBlue; // Toggle between blue and red
+            // Debounce toggle if needed
+            try {
+                Thread.sleep(200); // 200 ms debounce
+            } catch (InterruptedException e) {
+                // Handle exception
+            }
         }
 
         if (alignMode) {
             // Vision alignment mode
             double centerX = GamePiecePipeline.centerX;
-            double frameCenter = 160; // Half of the 320px frame width
-            double error = frameCenter - centerX;
+            double frameCenterX = 160; // Half of the 320px frame width
+            double errorX = centerX - frameCenterX;
 
-            if (Math.abs(error) > 10) { // Allowable error for alignment
-                double alignmentPower = Range.clip(error * 0.01, -0.3, 0.3);
-                frontLeftPower = -alignmentPower;
-                frontRightPower = alignmentPower;
-                backLeftPower = -alignmentPower;
-                backRightPower = alignmentPower;
-            } else {
+            // Proportional control for rotation
+            double rotationPower = Range.clip(errorX * ROTATION_KP, -MAX_ROTATION_POWER, MAX_ROTATION_POWER);
+
+            // Proportional control for strafing
+            // Assuming that if the block is off-center, we need to strafe towards it
+            double strafePower = Range.clip(-errorX * STRAFE_KP, -MAX_STRAFE_POWER, MAX_STRAFE_POWER);
+
+            // Combine rotation and strafing
+            frontLeftPower = rotationPower + strafePower;
+            frontRightPower = -rotationPower - strafePower;
+            backLeftPower = rotationPower - strafePower;
+            backRightPower = -rotationPower + strafePower;
+
+            // Optionally, add a forward-only approach if needed based on additional criteria
+            // For example, based on the size of the bounding box indicating distance
+
+            // Stop motors if alignment is within acceptable threshold
+            if (Math.abs(errorX) < 10) { // Allowable error for alignment
                 frontLeftPower = 0;
                 frontRightPower = 0;
                 backLeftPower = 0;
                 backRightPower = 0;
                 telemetry.addData("Alignment", "Aligned!");
             }
+
         } else {
             // Standard drive mode
             if (gamepad1.left_bumper) {
                 speedMultiplier = 0.5;
             } else {
-                speedMultiplier = 1;
+                speedMultiplier = 1.0;
             }
 
             double drive = -gamepad1.left_stick_y * speedMultiplier;
@@ -153,6 +178,9 @@ public class TeleOpMode extends OpMode {
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Alignment Mode", alignMode ? "ON" : "OFF");
         telemetry.addData("Target Color", targetBlue ? "Blue" : "Red");
+        //telemetry.addData("Center X", centerX);
+        //telemetry.addData("Error X", centerX - 160);
+        telemetry.update();
     }
 
     static class GamePiecePipeline extends OpenCvPipeline {
@@ -178,15 +206,22 @@ public class TeleOpMode extends OpMode {
 
             // Get bounding rectangle
             Rect boundingRect = Imgproc.boundingRect(mask);
-            Point topLeft = boundingRect.tl();
-            Point bottomRight = boundingRect.br();
 
-            // Calculate the center X of the bounding box
-            centerX = (topLeft.x + bottomRight.x) / 2;
+            // Check if any object is detected
+            if (boundingRect.width > 0 && boundingRect.height > 0) {
+                Point topLeft = boundingRect.tl();
+                Point bottomRight = boundingRect.br();
 
-            // Draw rectangle and center point for visualization
-            Imgproc.rectangle(input, topLeft, bottomRight, new Scalar(0, 255, 0), 2);
-            Imgproc.circle(input, new Point(centerX, topLeft.y), 5, new Scalar(255, 0, 0), -1);
+                // Calculate the center X of the bounding box
+                centerX = (topLeft.x + bottomRight.x) / 2;
+
+                // Draw rectangle and center point for visualization
+                Imgproc.rectangle(input, topLeft, bottomRight, new Scalar(0, 255, 0), 2);
+                Imgproc.circle(input, new Point(centerX, (topLeft.y + bottomRight.y) / 2), 5, new Scalar(255, 0, 0), -1);
+            } else {
+                // No object detected
+                centerX = 160; // Assume centered if nothing is detected
+            }
 
             mask.release();
             hsv.release();
