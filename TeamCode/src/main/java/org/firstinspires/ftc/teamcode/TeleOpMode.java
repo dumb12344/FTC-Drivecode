@@ -38,6 +38,15 @@ public class TeleOpMode extends OpMode
     boolean alignMode = false;
     static boolean targetBlue = true; // Default to blue target
     private OpenCvCamera camera;
+
+    // Proportional control constants
+    private static final double ROTATION_KP = 0.005; // Adjust as needed
+    private static final double STRAFE_KP = 0.005;   // Adjust as needed
+
+    // Maximum power limits to prevent overcorrection
+    private static final double MAX_ROTATION_POWER = 0.3;
+    private static final double MAX_STRAFE_POWER = 0.3;
+
     /**
      * Code to run ONCE when the driver hits INIT
      */
@@ -45,7 +54,7 @@ public class TeleOpMode extends OpMode
     public void init() {
         telemetry.addData("Status", "Initializing");
         core.init(hardwareMap);
-        
+
         // Camera setup
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -100,6 +109,12 @@ public class TeleOpMode extends OpMode
 
         if (gamepad1.b) {
             targetBlue = !targetBlue; // Toggle between blue and red
+            // Debounce toggle if needed
+            try {
+                Thread.sleep(200); // 200 ms debounce
+            } catch (InterruptedException e) {
+                // Handle exception
+            }
         }
 
         if (alignMode) {
@@ -122,6 +137,7 @@ public class TeleOpMode extends OpMode
                 backRightPower = 0;
                 telemetry.addData("Alignment", "Aligned!");
             }
+
         } else {
             // Standard drive mode
             movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1;
@@ -174,8 +190,10 @@ public class TeleOpMode extends OpMode
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Alignment Mode", alignMode ? "ON" : "OFF");
         telemetry.addData("Target Color", targetBlue ? "Blue" : "Red");
-       
-        updateTelemetry(telemetry);
+
+        //telemetry.addData("Center X", centerX);
+        //telemetry.addData("Error X", centerX - 160);
+        telemetry.update();
     }
 
     static class GamePiecePipeline extends OpenCvPipeline {
@@ -201,15 +219,22 @@ public class TeleOpMode extends OpMode
 
             // Get bounding rectangle
             Rect boundingRect = Imgproc.boundingRect(mask);
-            Point topLeft = boundingRect.tl();
-            Point bottomRight = boundingRect.br();
 
-            // Calculate the center X of the bounding box
-            centerX = (topLeft.x + bottomRight.x) / 2;
+            // Check if any object is detected
+            if (boundingRect.width > 0 && boundingRect.height > 0) {
+                Point topLeft = boundingRect.tl();
+                Point bottomRight = boundingRect.br();
 
-            // Draw rectangle and center point for visualization
-            Imgproc.rectangle(input, topLeft, bottomRight, new Scalar(0, 255, 0), 2);
-            Imgproc.circle(input, new Point(centerX, topLeft.y), 5, new Scalar(255, 0, 0), -1);
+                // Calculate the center X of the bounding box
+                centerX = (topLeft.x + bottomRight.x) / 2;
+
+                // Draw rectangle and center point for visualization
+                Imgproc.rectangle(input, topLeft, bottomRight, new Scalar(0, 255, 0), 2);
+                Imgproc.circle(input, new Point(centerX, (topLeft.y + bottomRight.y) / 2), 5, new Scalar(255, 0, 0), -1);
+            } else {
+                // No object detected
+                centerX = 160; // Assume centered if nothing is detected
+            }
 
             mask.release();
             hsv.release();
