@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -30,14 +29,14 @@ public class TeleOpMode extends OpMode
     //
 
     // Declare OpMode members.
-    private ElapsedTime runtime = new ElapsedTime();
+    ElapsedTime runtime = new ElapsedTime();
     util core = new util();
-    private double movementSpeedMultiplier = 1.0;
-    private double armBasePower = 0;
-    private double jointOnePower = 0;
+    double movementSpeedMultiplier = 1.0;
+    double armBasePower = 0;
+    double jointOnePower = 0;
 
-private boolean alignMode = false;
-    private static boolean targetBlue = true; // Default to blue target
+    boolean alignMode = false;
+    static boolean targetBlue = true; // Default to blue target
     private OpenCvCamera camera;
 
     // Proportional control constants
@@ -106,11 +105,7 @@ private boolean alignMode = false;
         double backLeftPower;
         double backRightPower;
 // Toggle alignment mode with 'A' button and set color target
-        if (gamepad1.a) {
-            alignMode = true;
-        } else {
-            alignMode = false;
-        }
+        alignMode = gamepad1.a;
 
         if (gamepad1.b) {
             targetBlue = !targetBlue; // Toggle between blue and red
@@ -125,27 +120,17 @@ private boolean alignMode = false;
         if (alignMode) {
             // Vision alignment mode
             double centerX = GamePiecePipeline.centerX;
-            double frameCenterX = 160; // Half of the 320px frame width
-            double errorX = centerX - frameCenterX;
+            double frameCenter = 160; // Half of the 320px frame width
+            double error = frameCenter - centerX;
 
-            // Proportional control for rotation
-            double rotationPower = Range.clip(errorX * ROTATION_KP, -MAX_ROTATION_POWER, MAX_ROTATION_POWER);
-
-            // Proportional control for strafing
-            // Assuming that if the block is off-center, we need to strafe towards it
-            double strafePower = Range.clip(-errorX * STRAFE_KP, -MAX_STRAFE_POWER, MAX_STRAFE_POWER);
-
-            // Combine rotation and strafing
-            frontLeftPower = rotationPower + strafePower;
-            frontRightPower = -rotationPower - strafePower;
-            backLeftPower = rotationPower - strafePower;
-            backRightPower = -rotationPower + strafePower;
-
-            // Optionally, add a forward-only approach if needed based on additional criteria
-            // For example, based on the size of the bounding box indicating distance
-
-            // Stop motors if alignment is within acceptable threshold
-            if (Math.abs(errorX) < 10) { // Allowable error for alignment
+            if (Math.abs(error) > 10) { // Allowable error for alignment
+                double alignmentPower = Range.clip(error * 0.01, -0.3, 0.3);
+                frontLeftPower = -alignmentPower;
+                frontRightPower = alignmentPower;
+                backLeftPower = -alignmentPower;
+                backRightPower = alignmentPower;
+                telemetry.addData("Alignment","Misaligned");
+            } else {
                 frontLeftPower = 0;
                 frontRightPower = 0;
                 backLeftPower = 0;
