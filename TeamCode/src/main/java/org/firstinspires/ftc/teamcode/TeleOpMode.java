@@ -25,9 +25,6 @@ import org.openftc.easyopencv.OpenCvPipeline;
 @TeleOp(name="Mecanum Drive", group="Iterative OpMode")
 public class TeleOpMode extends OpMode
 {
-    //TODO : fix joint / arm
-    //
-
     // Declare OpMode members.
     ElapsedTime runtime = new ElapsedTime();
     util core = new util();
@@ -41,11 +38,31 @@ public class TeleOpMode extends OpMode
 
     // Proportional control constants
     private static final double ROTATION_KP = 0.005; // Adjust as needed
-    private static final double STRAFE_KP = 0.005;   // Adjust as needed
+    private static final double STRAFE_KP = 0.01;   // Adjust as needed
 
     // Maximum power limits to prevent overcorrection
     private static final double MAX_ROTATION_POWER = 0.3;
     private static final double MAX_STRAFE_POWER = 0.3;
+
+    // Dead Zone Thresholds
+    private static final double CENTER_X_THRESHOLD = 10.0; // Pixels
+    private static final double ANGLE_THRESHOLD = 2.0;     // Degrees
+
+    // PID Controllers
+    private PIDController strafePID;
+    private PIDController turnPID;
+
+    // Filters
+    private LowPassFilter centerXFilter;
+
+    // Rate Limiters
+    private RateLimiter frontLeftLimiter = new RateLimiter(0.05);
+    private RateLimiter frontRightLimiter = new RateLimiter(0.05);
+    private RateLimiter backLeftLimiter = new RateLimiter(0.05);
+    private RateLimiter backRightLimiter = new RateLimiter(0.05);
+
+    // Timing for PID calculations
+    private ElapsedTime pidTimer = new ElapsedTime();
 
     /**
      * Code to run ONCE when the driver hits INIT
@@ -54,6 +71,23 @@ public class TeleOpMode extends OpMode
     public void init() {
         telemetry.addData("Status", "Initializing");
         core.init(hardwareMap);
+
+        // Initialize PID Controllers with tuned constants
+        strafePID = new PIDController(0.01, 0.000, 0.001);
+        strafePID.setOutputLimits(-MAX_STRAFE_POWER, MAX_STRAFE_POWER);
+
+        turnPID = new PIDController(ROTATION_KP, 0.000, 0.001);
+        turnPID.setOutputLimits(-MAX_ROTATION_POWER, MAX_ROTATION_POWER);
+
+        strafePID.setSetpoint(160); // Center of the frame
+        turnPID.setSetpoint(0);     // Desired angle deviation
+
+        // Initialize Filters
+        centerXFilter = new LowPassFilter(0.5); // Alpha = 0.5
+        centerXFilter.reset(160); // Initialize to frame center
+
+        // Initialize PID Timer
+        pidTimer.reset();
 
         // Camera setup
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
@@ -92,6 +126,7 @@ public class TeleOpMode extends OpMode
     @Override
     public void start() {
         runtime.reset();
+        pidTimer.reset();
     }
 
     /**
@@ -100,16 +135,20 @@ public class TeleOpMode extends OpMode
     @Override
     public void loop() {
         // Setup a variable for each drive wheel to save power level for telemetry
-        double frontLeftPower;
-        double frontRightPower;
-        double backLeftPower;
-        double backRightPower;
-// Toggle alignment mode with 'A' button and set color target
+        double frontLeftPower = 0;
+        double frontRightPower = 0;
+        double backLeftPower = 0;
+        double backRightPower = 0;
+
+        // Toggle alignment mode with 'A' button
         alignMode = gamepad1.a;
 
+        // Toggle target color with 'B' button
         if (gamepad1.b) {
             targetBlue = !targetBlue; // Toggle between blue and red
-            // Debounce toggle if needed
+            strafePID.reset();
+            turnPID.reset();
+            centerXFilter.reset(160);
             try {
                 Thread.sleep(200); // 200 ms debounce
             } catch (InterruptedException e) {
@@ -119,31 +158,50 @@ public class TeleOpMode extends OpMode
 
         if (alignMode) {
             // Vision alignment mode
-            double centerX = GamePiecePipeline.centerX;
-            double frameCenter = 160; // Half of the 320px frame width
-            double error = frameCenter - centerX;
+            double rawCenterX = GamePiecePipeline.getCurrentCenterX();
+            double filteredCenterX = centerXFilter.filter(rawCenterX);
 
-            if (Math.abs(error) > 10) { // Allowable error for alignment
-                double alignmentPower = Range.clip(error * 0.01, -0.3, 0.3);
-                frontLeftPower = -alignmentPower;
-                frontRightPower = alignmentPower;
-                backLeftPower = -alignmentPower;
-                backRightPower = alignmentPower;
-                telemetry.addData("Alignment","Misaligned");
-            } else {
-                frontLeftPower = 0;
-                frontRightPower = 0;
-                backLeftPower = 0;
-                backRightPower = 0;
-                telemetry.addData("Alignment", "Aligned!");
+            double currentTime = pidTimer.seconds();
+            double dt = currentTime;
+            pidTimer.reset();
+
+            // Compute PID outputs
+            double strafePower = strafePID.compute(filteredCenterX, dt);
+
+            // Assuming no angle error available; set turnPower to 0
+            double turnPower = 0;
+
+            // Apply dead zones
+            if (Math.abs(strafePID.setpoint - filteredCenterX) <= CENTER_X_THRESHOLD) {
+                strafePower = 0;
+            }
+            if (Math.abs(turnPower) <= ANGLE_THRESHOLD) {
+                turnPower = 0;
             }
 
+            // Combine strafing and turning powers
+            frontLeftPower = -strafePower - turnPower;
+            frontRightPower = strafePower - turnPower;
+            backLeftPower = -strafePower + turnPower;
+            backRightPower = strafePower + turnPower;
+
+            // Apply rate limiting
+            frontLeftPower = frontLeftLimiter.calculate(frontLeftPower);
+            frontRightPower = frontRightLimiter.calculate(frontRightPower);
+            backLeftPower = backLeftLimiter.calculate(backLeftPower);
+            backRightPower = backRightLimiter.calculate(backRightPower);
+
+            telemetry.addData("Alignment", "Aligning...");
+            telemetry.addData("Raw Center X", rawCenterX);
+            telemetry.addData("Filtered Center X", filteredCenterX);
+            telemetry.addData("Strafe Power", strafePower);
+            telemetry.addData("Turn Power", turnPower);
         } else {
             // Standard drive mode
-            movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1;
+            movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1.0;
 
             double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
-            double strafe = gamepad1.left_stick_x * movementSpeedMultiplier; // Reduce strafing speed
+            double strafe = gamepad1.left_stick_x * 0.5 * movementSpeedMultiplier; // Reduce strafing speed
             double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
 
             frontLeftPower = drive + strafe + turn;
@@ -157,15 +215,13 @@ public class TeleOpMode extends OpMode
             backRightPower = Range.clip(backRightPower, -1.0, 1.0);
         }
 
-
-        // Send calculated power to wheels
+        // Send calculated (and rate-limited) power to wheels
         core.frontLeftDrive.setPower(frontLeftPower);
         core.frontRightDrive.setPower(frontRightPower);
         core.backLeftDrive.setPower(backLeftPower);
         core.backRightDrive.setPower(backRightPower);
 
         // Control the arm using the D-pad up and down buttons
-
         if (gamepad1.dpad_up) {
             armBasePower = 0.5;
         } else if (gamepad1.dpad_down) {
@@ -179,26 +235,36 @@ public class TeleOpMode extends OpMode
         // Send calculated power to arm motors
         core.armBaseMotor.setPower(armBasePower);
         //core.jointOneMotor.setPower(jointOnePower);
-        // Send calculated power to arm motor
-        core.armBaseMotor.setPower(armBasePower);
 
-        // Show the elapsed game time and wheel power.
         // Telemetry
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("Motors", "frontLeft (%.2f), frontRight (%.2f), backLeft (%.2f), backRight (%.2f)", frontLeftPower, frontRightPower, backLeftPower, backRightPower);
+        telemetry.addData("Motors", String.format("FL: %.2f, FR: %.2f, BL: %.2f, BR: %.2f",
+                frontLeftPower, frontRightPower, backLeftPower, backRightPower));
         telemetry.addData("Arm Base Power", armBasePower);
         //telemetry.addData("Joint One Power", jointOnePower);
-        telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Alignment Mode", alignMode ? "ON" : "OFF");
         telemetry.addData("Target Color", targetBlue ? "Blue" : "Red");
 
-        //telemetry.addData("Center X", centerX);
-        //telemetry.addData("Error X", centerX - 160);
         telemetry.update();
     }
 
+    /**
+     * Applies a dead zone to the given power value.
+     * If the absolute value is below the threshold, returns 0.
+     *
+     * @param power The motor power to adjust.
+     * @param threshold The dead zone threshold.
+     * @return The adjusted motor power.
+     */
+    private double applyDeadZone(double power, double threshold) {
+        if (Math.abs(power) < threshold) {
+            return 0;
+        }
+        return power;
+    }
+
     static class GamePiecePipeline extends OpenCvPipeline {
-        static volatile double centerX = 0;
+        static volatile double centerX = 160; // Initialize to frame center
 
         @Override
         public Mat processFrame(Mat input) {
@@ -206,20 +272,40 @@ public class TeleOpMode extends OpMode
 
             // Define color ranges for detection
             if (targetBlue) {
-                lowerBound = new Scalar(100, 100, 100); // Blue range, adjust values
+                lowerBound = new Scalar(100, 150, 50); // Adjusted blue range
                 upperBound = new Scalar(130, 255, 255);
             } else {
-                lowerBound = new Scalar(0, 100, 100);   // Red range, adjust values
-                upperBound = new Scalar(10, 255, 255);
+                // Red color handling with two ranges
+                // Implemented above in the enhanced CV processing
+                lowerBound = new Scalar(0, 150, 50);   // Lower range for red
+                upperBound = new Scalar(10, 255, 255); // Upper hue range will require separate handling
             }
 
             Mat hsv = new Mat();
             Imgproc.cvtColor(input, hsv, Imgproc.COLOR_RGB2HSV);
+
             Mat mask = new Mat();
-            Core.inRange(hsv, lowerBound, upperBound, mask);
+
+            if (targetBlue) {
+                Core.inRange(hsv, lowerBound, upperBound, mask);
+            } else {
+                // Handle red color which spans two hue ranges
+                Mat lowerRed = new Mat();
+                Mat upperRed = new Mat();
+                Core.inRange(hsv, new Scalar(0, 150, 50), new Scalar(10, 255, 255), lowerRed);
+                Core.inRange(hsv, new Scalar(170, 150, 50), new Scalar(180, 255, 255), upperRed);
+                Core.addWeighted(lowerRed, 1.0, upperRed, 1.0, 0.0, mask);
+                lowerRed.release();
+                upperRed.release();
+            }
+
+            // Apply morphological operations to reduce noise
+            Mat morph = new Mat();
+            Imgproc.erode(mask, morph, new Mat(), new Point(-1, -1), 2);
+            Imgproc.dilate(morph, morph, new Mat(), new Point(-1, -1), 2);
 
             // Get bounding rectangle
-            Rect boundingRect = Imgproc.boundingRect(mask);
+            Rect boundingRect = Imgproc.boundingRect(morph);
 
             // Check if any object is detected
             if (boundingRect.width > 0 && boundingRect.height > 0) {
@@ -233,14 +319,120 @@ public class TeleOpMode extends OpMode
                 Imgproc.rectangle(input, topLeft, bottomRight, new Scalar(0, 255, 0), 2);
                 Imgproc.circle(input, new Point(centerX, (topLeft.y + bottomRight.y) / 2), 5, new Scalar(255, 0, 0), -1);
             } else {
-                // No object detected
-                centerX = 160; // Assume centered if nothing is detected
+                // No object detected; optionally keep previous centerX or set to frame center
+                // centerX = 160; // Uncomment if desired
             }
 
+            // Release resources
             mask.release();
             hsv.release();
+            morph.release();
 
             return input;
+        }
+
+        public static double getCurrentCenterX() {
+            return centerX;
+        }
+    }
+
+    // PID Controller Class
+    public class PIDController {
+        private double kp, ki, kd;
+        private double setpoint;
+
+        private double integral;
+        private double previousError;
+
+        private double outputMin = -1.0;
+        private double outputMax = 1.0;
+
+        public PIDController(double kp, double ki, double kd) {
+            this.kp = kp;
+            this.ki = ki;
+            this.kd = kd;
+            this.setpoint = 0;
+            this.integral = 0;
+            this.previousError = 0;
+        }
+
+        public void setSetpoint(double setpoint) {
+            this.setpoint = setpoint;
+        }
+
+        public double compute(double measurement, double dt) {
+            double error = setpoint - measurement;
+            integral += error * dt;
+            double derivative = (error - previousError) / dt;
+
+            double output = kp * error + ki * integral + kd * derivative;
+
+            // Clamp output
+            output = Math.max(outputMin, Math.min(output, outputMax));
+
+            previousError = error;
+            return output;
+        }
+
+        public void reset() {
+            integral = 0;
+            previousError = 0;
+        }
+
+        // Optional: Set output limits
+        public void setOutputLimits(double min, double max) {
+            this.outputMin = min;
+            this.outputMax = max;
+        }
+    }
+
+    // Low-Pass Filter Class
+    public class LowPassFilter {
+        private double alpha;
+        private double filteredValue;
+
+        public LowPassFilter(double alpha) {
+            this.alpha = alpha;
+            this.filteredValue = 0;
+        }
+
+        public double filter(double value) {
+            filteredValue = alpha * value + (1 - alpha) * filteredValue;
+            return filteredValue;
+        }
+
+        public void reset(double value) {
+            filteredValue = value;
+        }
+
+        public double get() {
+            return filteredValue;
+        }
+    }
+
+    // Rate Limiter Class
+    public class RateLimiter {
+        private double maxDelta;
+        private double lastValue;
+
+        public RateLimiter(double maxDelta) {
+            this.maxDelta = maxDelta;
+            this.lastValue = 0;
+        }
+
+        public double calculate(double target) {
+            double delta = target - lastValue;
+            if (delta > maxDelta) {
+                delta = maxDelta;
+            } else if (delta < -maxDelta) {
+                delta = -maxDelta;
+            }
+            lastValue += delta;
+            return lastValue;
+        }
+
+        public void reset(double value) {
+            lastValue = value;
         }
     }
 }
