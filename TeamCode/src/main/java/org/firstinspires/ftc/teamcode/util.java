@@ -4,19 +4,19 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class util {
-    public static DcMotor frontLeftDrive = null;
-    public static DcMotor frontRightDrive = null;
-    public static DcMotor backLeftDrive = null;
-    public static DcMotor backRightDrive = null;
-    public static DcMotor armBaseMotor = null;
-    public static DcMotor jointOneMotor = null;
+    public DcMotor frontLeftDrive = null;
+    public DcMotor frontRightDrive = null;
+    public DcMotor backLeftDrive = null;
+    public DcMotor backRightDrive = null;
+    public DcMotor armBaseMotor = null;
+    public DcMotor jointOneMotor = null;
     /**
      * Initializes motors (and eventually servos)
      * @param hardwareMap
      * @see TeleOpMode
      * @see AutonomousOpMode
      */
-    public static void init(HardwareMap hardwareMap) {
+    public void init(HardwareMap hardwareMap) {
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
