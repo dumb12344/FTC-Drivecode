@@ -180,10 +180,10 @@ public class TeleOpMode extends OpMode
             }
 
             // Combine strafing and turning powers
-            frontLeftPower = -strafePower - turnPower;
-            frontRightPower = strafePower - turnPower;
-            backLeftPower = -strafePower + turnPower;
-            backRightPower = strafePower + turnPower;
+            frontLeftPower = -strafePower - turnPower * 0.2;
+            frontRightPower = strafePower - turnPower* 0.2;
+            backLeftPower = -strafePower + turnPower* 0.2;
+            backRightPower = strafePower + turnPower* 0.2;
 
             // Apply rate limiting
             frontLeftPower = frontLeftLimiter.calculate(frontLeftPower);
@@ -201,7 +201,7 @@ public class TeleOpMode extends OpMode
             movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1.0;
 
             double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
-            double strafe = gamepad1.left_stick_x * 0.5 * movementSpeedMultiplier; // Reduce strafing speed
+            double strafe = gamepad1.left_stick_x * movementSpeedMultiplier; // Reduce strafing speed
             double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
 
             frontLeftPower = drive + strafe + turn;
