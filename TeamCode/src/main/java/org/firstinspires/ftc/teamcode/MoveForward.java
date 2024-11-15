@@ -9,7 +9,9 @@ public class MoveForward extends LinearOpMode {
     @Override
     public void runOpMode() {
         util core = new util();
+        core.init(hardwareMap);
         telemetry.addLine("Waiting for start");
+        telemetry.addLine("Make sure you stop after because I make the wheels stop in this code");
         updateTelemetry(telemetry);
         waitForStart();
         while(opModeIsActive()){
@@ -17,7 +19,6 @@ public class MoveForward extends LinearOpMode {
             core.frontRightDrive.setPower(1.0);
             core.backLeftDrive.setPower(1.0);
             core.backRightDrive.setPower(1.0);
-
         }
     }
 }
