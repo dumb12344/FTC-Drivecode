@@ -19,6 +19,7 @@ public class MoveForward extends LinearOpMode {
             core.frontRightDrive.setPower(0.2);
             core.backLeftDrive.setPower(0.2);
             core.backRightDrive.setPower(0.2);
+
         }
     }
 }
