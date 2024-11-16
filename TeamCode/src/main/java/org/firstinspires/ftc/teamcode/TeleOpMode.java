@@ -240,7 +240,7 @@ public class TeleOpMode extends OpMode
             core.rightHandServo.setPosition(0.0);
         }
 
-        armBasePower *= 1;
+        armBasePower *= 0.75;
 
         // Send calculated power to arm motors
         core.armBaseMotor.setPower(armBasePower);
