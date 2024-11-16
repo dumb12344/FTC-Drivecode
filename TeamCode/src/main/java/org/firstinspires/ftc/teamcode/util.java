@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 public class util {
     public DcMotor frontLeftDrive = null;
@@ -10,11 +11,14 @@ public class util {
     public DcMotor backRightDrive = null;
     public DcMotor armBaseMotor = null;
     public DcMotor jointOneMotor = null;
+    public Servo leftHandServo = null;
+    public Servo rightHandServo = null;
     /**
-     * Initializes motors (and eventually servos)
+     * Initializes motors and servos
      * @param hardwareMap
      * @see TeleOpMode
      * @see AutonomousOpMode
+     * @see MoveForward
      */
     public void init(HardwareMap hardwareMap) {
         // Initialize the hardware variables. Note that the strings used here as parameters
@@ -26,6 +30,9 @@ public class util {
         backRightDrive = hardwareMap.get(DcMotor.class, "back_right_drive");
         armBaseMotor = hardwareMap.get(DcMotor.class, "arm_base");
         //jointOneMotor = hardwareMap.get(DcMotor.class, "joint_one");
+        leftHandServo = hardwareMap.get(Servo.class, "left_finger");
+        rightHandServo = hardwareMap.get(Servo.class, "right_finger");
+
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
@@ -35,6 +42,8 @@ public class util {
         backRightDrive.setDirection(DcMotor.Direction.FORWARD);
         armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
         //jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
+        leftHandServo.setDirection(Servo.Direction.FORWARD);
+        rightHandServo.setDirection(Servo.Direction.FORWARD);
 
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
