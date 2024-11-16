@@ -198,7 +198,7 @@ public class TeleOpMode extends OpMode
             telemetry.addData("Turn Power", turnPower);
         } else {
             // Standard drive mode
-            movementSpeedMultiplier = gamepad1.left_bumper ? 0.5 : 1.0;
+            movementSpeedMultiplier = gamepad1.left_bumper ? 0.2 : 1.0;
 
             double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
             double strafe = gamepad1.left_stick_x * movementSpeedMultiplier; // Reduce strafing speed
@@ -230,7 +230,17 @@ public class TeleOpMode extends OpMode
             armBasePower = 0;
         }
 
-        armBasePower *= 1;
+        //move hand (right trigger and bumper)
+        if (gamepad1.right_trigger>0){
+            core.leftHandServo.setPosition(0.0);
+            core.rightHandServo.setPosition(1.0);
+        }
+        else if (gamepad1.right_bumper){
+            core.leftHandServo.setPosition(1.0);
+            core.rightHandServo.setPosition(0.0);
+        }
+
+        armBasePower *= 0.75;
 
         // Send calculated power to arm motors
         core.armBaseMotor.setPower(armBasePower);
