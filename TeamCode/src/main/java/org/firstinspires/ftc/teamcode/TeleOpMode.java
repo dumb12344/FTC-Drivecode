@@ -230,6 +230,20 @@ public class TeleOpMode extends OpMode
             armBasePower = 0;
         }
 
+        //move hand (right trigger and bumper)
+        if (gamepad1.right_trigger>=1){
+            core.leftHandServo.setPosition(-1.0);
+            core.rightHandServo.setPosition(-1.0);
+        }
+        else if (gamepad1.right_bumper){
+            core.leftHandServo.setPosition(1.0);
+            core.rightHandServo.setPosition(1.0);
+        }
+        else{
+            core.leftHandServo.setPosition(0.0);
+            core.rightHandServo.setPosition(0.0);
+        }
+
         armBasePower *= 1;
 
         // Send calculated power to arm motors
