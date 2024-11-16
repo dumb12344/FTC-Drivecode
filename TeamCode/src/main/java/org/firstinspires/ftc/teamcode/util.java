@@ -43,7 +43,7 @@ public class util {
         armBaseMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics 20:1 HD Hex Motor
         //jointOneMotor.setDirection(DcMotor.Direction.FORWARD); // REV Robotics Core Hex Motor
         leftHandServo.setDirection(Servo.Direction.FORWARD);
-        rightHandServo.setDirection(Servo.Direction.REVERSE);
+        rightHandServo.setDirection(Servo.Direction.FORWARD);
 
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
