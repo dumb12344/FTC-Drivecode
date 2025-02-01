@@ -30,6 +30,7 @@ public class TeleOpMode extends OpMode
     util core = new util();
     double movementSpeedMultiplier = 1.0;
     double armBasePower = 0;
+    double handPower = 0.3;
     //double jointOnePower = 0;
 
     boolean alignMode = false;
@@ -60,6 +61,8 @@ public class TeleOpMode extends OpMode
     private RateLimiter frontRightLimiter = new RateLimiter(0.05);
     private RateLimiter backLeftLimiter = new RateLimiter(0.05);
     private RateLimiter backRightLimiter = new RateLimiter(0.05);
+    
+
 
     // Timing for PID calculations
     private ElapsedTime pidTimer = new ElapsedTime();
@@ -233,16 +236,17 @@ public class TeleOpMode extends OpMode
             armBasePower = 0;
         }
 
-        //move hand (right trigger and bumper)
+        
+        //move hand (right trigger and bumper)i
         if (gamepad1.right_trigger>0) {
             telemetry.addData("right trigger",true);
             telemetry.addData("right bumper",false);
-            core.handServo.setPower(1);
+            core.handServo.setPower(handPower);
         }
         else if(gamepad1.right_bumper){
-            telemetry.addData("right bumper",true);
             telemetry.addData("right trigger",false);
-            core.handServo.setPower(-1);
+            telemetry.addData("right bumper",true);
+            core.handServo.setPower(-handPower);
         }
         else{
             telemetry.addData("right bumper",false);
