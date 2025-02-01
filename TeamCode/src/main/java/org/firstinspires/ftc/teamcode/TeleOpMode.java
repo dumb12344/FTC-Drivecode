@@ -30,7 +30,7 @@ public class TeleOpMode extends OpMode
     util core = new util();
     double movementSpeedMultiplier = 1.0;
     double armBasePower = 0;
-    double jointOnePower = 0;
+    //double jointOnePower = 0;
 
     boolean alignMode = false;
     static boolean targetBlue = true; // Default to blue target
@@ -38,7 +38,7 @@ public class TeleOpMode extends OpMode
 
     // Proportional control constants
     private static final double ROTATION_KP = 0.005; // Adjust as needed
-    private static final double STRAFE_KP = 0.01;   // Adjust as needed
+    //private static final double STRAFE_KP = 0.01;   // Adjust as needed
 
     // Maximum power limits to prevent overcorrection
     private static final double MAX_ROTATION_POWER = 0.3;
@@ -46,7 +46,7 @@ public class TeleOpMode extends OpMode
 
     // Dead Zone Thresholds
     private static final double CENTER_X_THRESHOLD = 10.0; // Pixels
-    private static final double ANGLE_THRESHOLD = 2.0;     // Degrees
+    //private static final double ANGLE_THRESHOLD = 2.0;     // Degrees
 
     // PID Controllers
     private PIDController strafePID;
@@ -135,10 +135,10 @@ public class TeleOpMode extends OpMode
     @Override
     public void loop() {
         // Setup a variable for each drive wheel to save power level for telemetry
-        double frontLeftPower = 0;
-        double frontRightPower = 0;
-        double backLeftPower = 0;
-        double backRightPower = 0;
+        double frontLeftPower;
+        double frontRightPower;
+        double backLeftPower;
+        double backRightPower;
 
         // Toggle alignment mode with 'A' button
         alignMode = gamepad1.a;
@@ -175,9 +175,12 @@ public class TeleOpMode extends OpMode
             if (Math.abs(strafePID.setpoint - filteredCenterX) <= CENTER_X_THRESHOLD) {
                 strafePower = 0;
             }
+            /*
             if (Math.abs(turnPower) <= ANGLE_THRESHOLD) {
                 turnPower = 0;
             }
+            */
+
 
             // Combine strafing and turning powers
             frontLeftPower = -strafePower - turnPower;
@@ -235,6 +238,10 @@ public class TeleOpMode extends OpMode
             core.leftHandServo.setPosition(1);
         }else{
             core.leftHandServo.setPosition(0);
+        }
+        else{
+            core.leftHandServo.setPosition(0.5);
+            core.rightHandServo.setPosition(0.5);
         }
 
         armBasePower *= 0.75;

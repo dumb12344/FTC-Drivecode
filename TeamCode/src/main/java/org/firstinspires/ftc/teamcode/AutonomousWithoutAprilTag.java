@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 @Autonomous()
-public class MoveForward extends LinearOpMode {
+public class AutonomousWithoutAprilTag extends LinearOpMode {
 
     @Override
     public void runOpMode() {
