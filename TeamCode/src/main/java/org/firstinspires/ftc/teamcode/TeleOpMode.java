@@ -180,10 +180,10 @@ public class TeleOpMode extends OpMode
             }
 
             // Combine strafing and turning powers
-            frontLeftPower = -strafePower - turnPower * 0.2;
-            frontRightPower = strafePower - turnPower* 0.2;
-            backLeftPower = -strafePower + turnPower* 0.2;
-            backRightPower = strafePower + turnPower* 0.2;
+            frontLeftPower = -strafePower - turnPower;
+            frontRightPower = strafePower - turnPower;
+            backLeftPower = -strafePower + turnPower;
+            backRightPower = strafePower + turnPower;
 
             // Apply rate limiting
             frontLeftPower = frontLeftLimiter.calculate(frontLeftPower);
@@ -231,13 +231,10 @@ public class TeleOpMode extends OpMode
         }
 
         //move hand (right trigger and bumper)
-        if (gamepad1.right_trigger>0){
-            core.leftHandServo.setPosition(0.0);
-            core.rightHandServo.setPosition(1.0);
-        }
-        else if (gamepad1.right_bumper){
-            core.leftHandServo.setPosition(1.0);
-            core.rightHandServo.setPosition(0.0);
+        if (gamepad1.right_trigger>0) {
+            core.leftHandServo.setPosition(1);
+        }else{
+            core.leftHandServo.setPosition(0);
         }
 
         armBasePower *= 0.75;
