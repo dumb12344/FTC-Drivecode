@@ -203,9 +203,9 @@ public class TeleOpMode extends OpMode
             // Standard drive mode
             movementSpeedMultiplier = gamepad1.left_bumper ? 0.2 : 1.0;
 
-            double drive = -gamepad1.left_stick_y * movementSpeedMultiplier;
-            double strafe = gamepad1.left_stick_x * movementSpeedMultiplier; // Reduce strafing speed
-            double turn = gamepad1.right_stick_x * movementSpeedMultiplier;
+            double drive = gamepad1.left_stick_y * movementSpeedMultiplier;
+            double strafe = gamepad1.left_stick_x * movementSpeedMultiplier * 0; // Reduce strafing speed
+            double turn = -gamepad1.right_stick_x * movementSpeedMultiplier;
 
             frontLeftPower = drive + strafe + turn;
             frontRightPower = drive - strafe - turn;
@@ -235,13 +235,19 @@ public class TeleOpMode extends OpMode
 
         //move hand (right trigger and bumper)
         if (gamepad1.right_trigger>0) {
-            core.leftHandServo.setPosition(1);
-        }else{
-            core.leftHandServo.setPosition(0);
+            telemetry.addData("right trigger",true);
+            telemetry.addData("right bumper",false);
+            core.handServo.setPower(1);
+        }
+        else if(gamepad1.right_bumper){
+            telemetry.addData("right bumper",true);
+            telemetry.addData("right trigger",false);
+            core.handServo.setPower(-1);
         }
         else{
-            core.leftHandServo.setPosition(0.5);
-            core.rightHandServo.setPosition(0.5);
+            telemetry.addData("right bumper",false);
+            telemetry.addData("right trigger",false);
+            core.handServo.setPower(0);
         }
 
         armBasePower *= 0.75;
@@ -255,6 +261,7 @@ public class TeleOpMode extends OpMode
         telemetry.addData("Motors", String.format("FL: %.2f, FR: %.2f, BL: %.2f, BR: %.2f",
                 frontLeftPower, frontRightPower, backLeftPower, backRightPower));
         telemetry.addData("Arm Base Power", armBasePower);
+        telemetry.addData("hand servo power", core.handServo.getPower());
         //telemetry.addData("Joint One Power", jointOnePower);
         telemetry.addData("Alignment Mode", alignMode ? "ON" : "OFF");
         telemetry.addData("Target Color", targetBlue ? "Blue" : "Red");
